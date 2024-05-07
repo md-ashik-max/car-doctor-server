@@ -7,7 +7,7 @@ require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
 
-
+// https://car-doctor-12f67.web.app
 // middleware
 
 app.use(cors({
@@ -48,18 +48,24 @@ const verifyToken = (req, res, next) => {
         return res.status(401).send({ message: 'unauthorized access' })
     }
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if(err) {
+        if (err) {
             return res.send({ message: 'unauthorized access' })
         }
-        req.user=decoded;
+        req.user = decoded;
         next()
     })
+}
+
+const cookieOption = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
 }
 
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const serviceCollection = client.db('carDoctor').collection('services');
         const bookingCollection = client.db('carDoctor').collection('booking');
@@ -70,11 +76,7 @@ async function run() {
             const user = req.body;
             console.log('user for token', user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-            res.cookie('token', token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none'
-            })
+            res.cookie('token', token, cookieOption)
                 .send({ success: true })
         })
 
@@ -125,8 +127,8 @@ async function run() {
         app.get('/booking/:email', logger, verifyToken, async (req, res) => {
             const email = req.params.email;
             console.log('token owner', req.user)
-            if(req.user.email !==email){
-                return res.status(403).send({message:'forbidden access'})
+            if (req.user.email !== email) {
+                return res.status(403).send({ message: 'forbidden access' })
             }
             const query = { email: email };
             const cursor = bookingCollection.find(query);
@@ -165,7 +167,7 @@ async function run() {
 
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
